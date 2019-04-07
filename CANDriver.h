@@ -14,7 +14,7 @@ public:
   virtual bool SendMessage( const CANMessage& rMessage);
    
 private:
-  int m_fdSocketCAN
+  int m_fdSocketCAN;
 
 };
 }
