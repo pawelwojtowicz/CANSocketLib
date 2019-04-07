@@ -1,4 +1,5 @@
 #include "CANDriver.h"
+#include "CANMessage.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,11 +66,26 @@ void CANDriver::Close()
 
 bool CANDriver::GetMessage( CANMessage& rMessage )
 {
-  bool retVal(false);
   if ( -1 != m_fdSocketCAN)
   {
+    //    struct can_frame {
+    //            canid_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
+    //            __u8    can_dlc; /* frame payload length in byte (0 .. 8) */
+    //            __u8    __pad;   /* padding */
+    //            __u8    __res0;  /* reserved / padding */
+    //            __u8    __res1;  /* reserved / padding */
+    //            __u8    data[8] __attribute__((aligned(8)));
+    //    };
+    struct can_frame frame;
+    int nbytes = read(m_fdSocketCAN, &frame, sizeof(struct can_frame));
+
+    rMessage.SetCANId( frame.can_id );
+    rMessage.SetPayload( frame.data, frame.can_dlc );
+
+    ioctl( m_fdSocketCAN, SIOCGSTAMP, &rMessage.GetWritableTimeStamp() );
+
   }
-  return retVal;
+  return false;
 }
 
 bool CANDriver::SendMessage( const CANMessage& rMessage)
@@ -78,16 +94,6 @@ bool CANDriver::SendMessage( const CANMessage& rMessage)
   if ( -1 != m_fdSocketCAN)
   {
     struct can_frame frame;
-
-
-//    struct can_frame {
-//            canid_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-//            __u8    can_dlc; /* frame payload length in byte (0 .. 8) */
-//            __u8    __pad;   /* padding */
-//            __u8    __res0;  /* reserved / padding */
-//            __u8    __res1;  /* reserved / padding */
-//            __u8    data[8] __attribute__((aligned(8)));
-//    };
 
     int nbytes = write(m_fdSocketCAN, &frame, sizeof(struct can_frame));
   }
